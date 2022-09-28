@@ -1,3 +1,6 @@
+# Script to find a study hall/commons class for each student
+# Looks at only the current term(s) and tries to filter out the duplicate SHs that some students have for IEP manager purposes
+# Outputs to a file and uploads to sftp server for autocomm into PS overnight
 
 # See the following for table information
 # https://docs.powerschool.com/PSDD/powerschool-tables/cc-4-ver3-6-1

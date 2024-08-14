@@ -36,6 +36,7 @@ badnames = ['use', 'user', 'teststudent', 'test student', 'testtt', 'testtest', 
 OUTPUT_FILE_NAME = 'studyhalls.txt'
 OUTPUT_FILE_DIRECTORY = '/sftp/studyhalls/'
 
+
 if __name__ == '__main__':  # main file execution
     with open('studyhall_log.txt', 'w') as log:  # open the logging file
         startTime = datetime.now()
@@ -48,7 +49,7 @@ if __name__ == '__main__':  # main file execution
                 print(f'INFO: Connection established to PS database on version: {con.version}', file=log)
                 with open(OUTPUT_FILE_NAME, 'w') as output:  # open the output file
                     today = datetime.now()  # get todays date and store it for finding the correct term later
-                    cur.execute('SELECT student_number, dcid, id, schoolid, enroll_status, grade_level FROM students ORDER BY student_number DESC')
+                    cur.execute('SELECT stu.student_number, stu.dcid, stu.id, stu.schoolid, stu.enroll_status, stu.grade_level, ext.studyhall FROM students stu LEFT JOIN u_def_ext_students0 ext ON stu.dcid = ext.studentsdcid ORDER BY student_number DESC')
                     students = cur.fetchall()
                     for student in students:
                         try:
@@ -61,8 +62,9 @@ if __name__ == '__main__':  # main file execution
                             schoolID = str(student[3])
                             status = str(student[4])  # active on 0, inactive 1 or 2, 3 for graduated
                             grade = int(student[5])
+                            currentStudyhall = str(student[6]) if student[6] else None
                             if status == '0':  # only active students will get processed, otherwise just blanked out
-                                #do another query to get their classes, filter to just the current year and only course numbers that contain SH
+                                # do another query to get their classes, filter to just the current year and only course numbers that contain SH
                                 try:
                                      # get a list of terms for the school, filtering to NOT full years
                                     cur.execute("SELECT id, firstday, lastday, schoolid, dcid FROM terms WHERE schoolid = :school ORDER BY dcid DESC", school=schoolID)  # Use bind variables. https://python-oracledb.readthedocs.io/en/latest/user_guide/bind.html#bind
@@ -78,10 +80,10 @@ if __name__ == '__main__':  # main file execution
                                                 # now for each term that is valid, do a query for all their courses that have SH in their course_number
                                                 cur.execute("SELECT schoolid, course_number, sectionid, section_number, expression, teacherid FROM cc WHERE instr(course_number, 'SH') > 0 AND studentid = :internalID AND termid = :term ORDER BY course_number", internalID = internalID, term = termid)
                                                 userClasses = cur.fetchall()
-                                            elif (grade > 8):  # process for high schoolers
+                                            # elif (grade > 8):  # process for high schoolers
                                                 # now for each term that is valid, do a query for all their courses that have Commons in their course_number
-                                                cur.execute("SELECT schoolid, course_number, sectionid, section_number, expression, teacherid FROM cc WHERE instr(course_number, 'Commons') > 0 AND studentid = :internalID AND termid = :term ORDER BY course_number",  internalID = internalID, term = termid)
-                                                userClasses = cur.fetchall()
+                                                # cur.execute("SELECT schoolid, course_number, sectionid, section_number, expression, teacherid FROM cc WHERE instr(course_number, 'Commons') > 0 AND studentid = :internalID AND termid = :term ORDER BY course_number",  internalID = internalID, term = termid)
+                                                # userClasses = cur.fetchall()
                                             else:  # if they are a grade schooler we just want to set our results to an empty list to skip them
                                                 userClasses = []
                                             # print(len(userClasses), file=log) # debug
@@ -120,18 +122,21 @@ if __name__ == '__main__':  # main file execution
 
                                                 print(f'DBUG: Student: {idNum} | Term ID: {termid} | Studyhall teacher: {studyhall_teacher} | Room: {studyhall_number} | Period: {period}')  # debug
                                                 print(f'DBUG: Student: {idNum} | Term ID: {termid} | Studyhall teacher: {studyhall_teacher} | Room: {studyhall_number} | Period: {period}', file=log)  # debug
+
+                                                # do final output, but only if it is different than whats already there
+                                                if currentStudyhall != (studyhall_teacher + ' - ' + period):
+                                                    print(f'{idNum}\t{studyhall_teacher} - {period}', file=output)  # Do final output to txt file
                                             else:
                                                 print(f'DBUG: Student: {idNum} - No study halls or commons found for term {termid}')
                                                 print(f'DBUG: Student: {idNum} - No study halls or commons found for term {termid}', file=log)
+
                                 except Exception as er:
                                     print(f'ERROR getting courses for student {idNum}: {er} ')
                                     print(f'ERROR getting courses for student {idNum}: {er} ', file=log)
 
-                            # Do final output to txt file, still have an output even if there isnt any studyhall found just so it can blank out the field
-                            if(studyhall_teacher != ''):  # have two cases so we can have fancier formatting for results while still blanking out students without
-                                print(f'{idNum}\t{studyhall_teacher} - {period}', file=output)
-                            else:
-                                print(f'{idNum}\t', file=output)
+                            else:  # inactive students
+                                if currentStudyhall != None:
+                                    print(f'{idNum}\t', file=output)
 
                         except Exception as er:
                             print(f'ERROR while processing student {student[0]} : {er}')

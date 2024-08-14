@@ -2,3 +2,4 @@ studyhall_log.txt
 studyhalls.txt
 known_hosts
 ruff.toml
+.venv/

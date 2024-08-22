@@ -35,7 +35,7 @@ badnames = ['use', 'user', 'teststudent', 'test student', 'testtt', 'testtest', 
 
 OUTPUT_FILE_NAME = 'studyhalls.txt'
 OUTPUT_FILE_DIRECTORY = '/sftp/studyhalls/'
-
+IGNORED_SCHOOLS = ['5']
 
 if __name__ == '__main__':  # main file execution
     with open('studyhall_log.txt', 'w') as log:  # open the logging file
@@ -80,10 +80,10 @@ if __name__ == '__main__':  # main file execution
                                                 # now for each term that is valid, do a query for all their courses that have SH in their course_number
                                                 cur.execute("SELECT schoolid, course_number, sectionid, section_number, expression, teacherid FROM cc WHERE instr(course_number, 'SH') > 0 AND studentid = :internalID AND termid = :term ORDER BY course_number", internalID = internalID, term = termid)
                                                 userClasses = cur.fetchall()
-                                            # elif (grade > 8):  # process for high schoolers
+                                            elif (grade > 8):  # process for high schoolers
                                                 # now for each term that is valid, do a query for all their courses that have Commons in their course_number
-                                                # cur.execute("SELECT schoolid, course_number, sectionid, section_number, expression, teacherid FROM cc WHERE instr(course_number, 'Commons') > 0 AND studentid = :internalID AND termid = :term ORDER BY course_number",  internalID = internalID, term = termid)
-                                                # userClasses = cur.fetchall()
+                                                cur.execute("SELECT schoolid, course_number, sectionid, section_number, expression, teacherid FROM cc WHERE instr(course_number, 'ommons') > 0 AND studentid = :internalID AND termid = :term ORDER BY course_number",  internalID = internalID, term = termid)
+                                                userClasses = cur.fetchall()
                                             else:  # if they are a grade schooler we just want to set our results to an empty list to skip them
                                                 userClasses = []
                                             # print(len(userClasses), file=log) # debug
@@ -125,7 +125,11 @@ if __name__ == '__main__':  # main file execution
 
                                                 # do final output, but only if it is different than whats already there
                                                 if currentStudyhall != (studyhall_teacher + ' - ' + period):
-                                                    print(f'{idNum}\t{studyhall_teacher} - {period}', file=output)  # Do final output to txt file
+                                                    if schoolID not in IGNORED_SCHOOLS:
+                                                        print(f'{idNum}\t{studyhall_teacher} - {period}', file=output)  # Do final output to txt file
+                                                    else:
+                                                        print(f'WARN: Student {idNum} at school {schoolID} currently has study hall listed as {currentStudyhall} but found new study hall {studyhall_teacher}')
+                                                        print(f'WARN: Student {idNum} at school {schoolID} currently has study hall listed as {currentStudyhall} but found new study hall {studyhall_teacher}', file=log)
                                             else:
                                                 print(f'DBUG: Student: {idNum} - No study halls or commons found for term {termid}')
                                                 print(f'DBUG: Student: {idNum} - No study halls or commons found for term {termid}', file=log)

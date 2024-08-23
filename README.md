@@ -38,6 +38,7 @@ In order to import the information into PowerSchool, a scheduled AutoComm job sh
 This script is very customized to our school district as it uses searches for specific course "numbers" which correlate to our study halls and commons at certain grade levels. It will require a bit of coding to change this to work with your specific district, but some things you will likely want to change are listed below:
 
 - If your students have different grade level breakpoints where they will have study halls vs commons, look to edit the `if (grade > 5 and grade < 9)` and `elif (grade > 8)` blocks to fit your grades
-- Inside those if statements, you will want to edit the SQL query, specifically the `WHERE instr(course_number, 'SH')` and change the 'SH'/'Commons' to match the name of your courses.
+- If you need to ignore a building from the output for some reason, add its PowerSchool school ID to the `IGNORED_SCHOOLS` list as a string.
+- Inside those if statements, you will want to edit the SQL query, specifically the `WHERE instr(course_number, 'SH')` and change the 'SH'/'ommons' to match the name of your courses.
 - You will also probably want to change or remove the block that has `if len(userClasses) > 1` where I ignore classes that have 'IN' in them as those are our duplicate study halls for IEP meeting purposes.
 - You can change the filename and output SFTP directory by editing `OUTPUT_FILE_NAME` and `OUTPUT_FILE_DIRECTORY`, and then setup PowerSchool for the import.
